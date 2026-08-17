@@ -44,7 +44,6 @@
 
 <main class="panes">
   <section class="pane">
-    <textarea id="src" class="editor" placeholder="ここに貼り付け（⌘V）" spellcheck="false" autofocus></textarea>
     <div class="pane__foot">
       <span id="count" class="micro micro--dim">0 文字</span>
       <div class="pane__actions">
@@ -52,18 +51,19 @@
         <button id="clear" class="ghost" type="button">クリア</button>
       </div>
     </div>
+    <textarea id="src" class="editor" placeholder="ここに貼り付け（⌘V）" spellcheck="false" autofocus></textarea>
   </section>
 
   <div class="gutter" aria-hidden="true"></div>
 
   <section class="pane pane--out">
-    <div id="out" class="editor editor--out" tabindex="0" aria-live="polite" aria-busy="false"></div>
     <div class="pane__foot">
       <span id="latency" class="micro micro--dim"></span>
       <div class="pane__actions">
         <button id="copy" class="ghost" type="button">訳文をコピー</button>
       </div>
     </div>
+    <div id="out" class="editor editor--out" tabindex="0" aria-live="polite" aria-busy="false"></div>
   </section>
 </main>
 

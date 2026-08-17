@@ -38,8 +38,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.send_header("Cross-Origin-Opener-Policy", "same-origin")
         self.send_header("Cross-Origin-Embedder-Policy", "require-corp")
         self.send_header("Cross-Origin-Resource-Policy", "same-origin")
-        # Service Worker と衝突しないよう、HTML/JS は毎回確認させる
-        if self.path.endswith((".html", ".js", "/")):
+        # Service Worker と衝突しないよう、アプリ本体は毎回確認させる
+        # （.css が抜けていると、HTML だけ更新されて CSS が古いままという
+        #   ズレが起きるので要注意）
+        if self.path.endswith((".html", ".css", ".js", "/")):
             self.send_header("Cache-Control", "no-cache")
         super().end_headers()
 

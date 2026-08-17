@@ -151,7 +151,7 @@ body {
 
 .pane {
   display: grid;
-  grid-template-rows: 1fr auto;
+  grid-template-rows: auto 1fr;
   min-height: 0;
   background: var(--surface);
 }
@@ -178,6 +178,12 @@ body {
 
 .editor::placeholder { color: var(--dim); opacity: .65; }
 
+/* パネルが画面端いっぱいまで敷き詰められているため、通常の外側フォーカスリング
+   だと下の pane__foot / rail にはみ出す。内側に描画して収める。 */
+.editor:focus-visible {
+  outline-offset: -2px;
+}
+
 .editor--out[data-empty="true"]::before {
   content: attr(data-hint);
   color: var(--dim);
@@ -192,7 +198,7 @@ body {
   justify-content: space-between;
   gap: calc(var(--step) * 3);
   padding: calc(var(--step) * 2) calc(var(--step) * 6);
-  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
 }
 
 .pane__actions {
