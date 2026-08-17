@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ログイン時にサーバーを自動起動させたい場合に使います。
+  PROJECT_PATH を実際のパスに書き換えてから:
+
+      cp com.nagi.server.plist ~/Library/LaunchAgents/
+      launchctl load ~/Library/LaunchAgents/com.nagi.server.plist
+
+  止めるとき:
+
+      launchctl unload ~/Library/LaunchAgents/com.nagi.server.plist
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.nagi.server</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/python3</string>
+    <string>PROJECT_PATH/serve.py</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>PROJECT_PATH</string>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>/tmp/nagi.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>/tmp/nagi.err.log</string>
+</dict>
+</plist>

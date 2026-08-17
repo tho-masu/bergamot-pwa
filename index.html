@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nagi — オフライン翻訳</title>
+<meta name="description" content="端末内で完結する翻訳。テキストは外部に送信されません。">
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#EEF0F4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161B" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+
+<header class="bar">
+  <div class="mark">
+    <span class="mark__glyph" aria-hidden="true">凪</span>
+    <span class="mark__name">Nagi</span>
+  </div>
+
+  <div class="pair">
+    <label class="pair__side">
+      <span class="micro">原文</span>
+      <select id="from" class="lang"></select>
+    </label>
+
+    <button id="swap" class="swap" type="button" title="言語を入れ替える" aria-label="言語を入れ替える">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M4 8h13M13 4l4 4-4 4M20 16H7M11 12l-4 4 4 4"/>
+      </svg>
+    </button>
+
+    <label class="pair__side">
+      <span class="micro">訳文</span>
+      <select id="to" class="lang"></select>
+    </label>
+  </div>
+
+  <div class="bar__end">
+    <span id="badge" class="badge badge--wait">準備中</span>
+  </div>
+</header>
+
+<main class="panes">
+  <section class="pane">
+    <textarea id="src" class="editor" placeholder="ここに貼り付け（⌘V）" spellcheck="false" autofocus></textarea>
+    <div class="pane__foot">
+      <span id="count" class="micro micro--dim">0 文字</span>
+      <button id="clear" class="ghost" type="button">消去</button>
+    </div>
+  </section>
+
+  <div class="gutter" aria-hidden="true"></div>
+
+  <section class="pane pane--out">
+    <div id="out" class="editor editor--out" tabindex="0" aria-live="polite" aria-busy="false"></div>
+    <div class="pane__foot">
+      <span id="latency" class="micro micro--dim"></span>
+      <button id="copy" class="ghost" type="button">訳文をコピー</button>
+    </div>
+  </section>
+</main>
+
+<footer class="rail">
+  <span class="rail__dot" id="dot" aria-hidden="true"></span>
+  <p class="rail__msg" id="status">エンジンを読み込んでいます。</p>
+  <div class="rail__meter" id="meter" hidden>
+    <div class="rail__fill" id="fill"></div>
+  </div>
+  <p class="rail__note micro">端末内で処理・送信なし</p>
+</footer>
+
+<script type="module" src="./app.js"></script>
+</body>
+</html>

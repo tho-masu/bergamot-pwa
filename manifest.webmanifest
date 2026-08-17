@@ -1,0 +1,17 @@
+{
+  "name": "Nagi — オフライン翻訳",
+  "short_name": "Nagi",
+  "description": "端末内で完結する翻訳。テキストは外部に送信されません。",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#EEF0F4",
+  "theme_color": "#EEF0F4",
+  "lang": "ja",
+  "icons": [
+    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
