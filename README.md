@@ -11,18 +11,14 @@ Firefox の翻訳機能と**同じエンジン（Bergamot / Marian NMT）と同�
 
 ## 1. 必要なもの
 
-```bash
-brew install node git-lfs
-git lfs install
-xcode-select --install    # git が未導入の場合のみ
-```
+- None.js
+- git
 
 Python は macOS 標準の `python3` を使います（追加インストール不要）。
 
 ## 2. セットアップ
 
 ```bash
-cd bergamot-pwa
 chmod +x setup.sh serve.py
 ./setup.sh
 ```
@@ -77,10 +73,6 @@ open -a "Nagi"
 
 **「vendor/translator.js が見つかりません」**
 `./setup.sh` が途中で失敗しています。もう一度実行し、エラーメッセージを確認してください。
-
-**「models/registry.json を読めません」**
-`git lfs install` を忘れると、モデルの実体ではなくポインタファイルが落ちてきます。
-`git lfs install` を実行してから `./setup.sh` をやり直してください。
 
 **特定の言語ペアだけエラーになる**
 Firefox のモデルは全組み合わせを網羅していません。直接のペアが無い場合は英語を経由する必要があります。
