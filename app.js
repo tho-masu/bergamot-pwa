@@ -11,7 +11,7 @@ const $ = (id) => document.getElementById(id);
 const el = {
   from: $('from'), to: $('to'), swap: $('swap'), badge: $('badge'),
   src: $('src'), out: $('out'), count: $('count'), latency: $('latency'),
-  clear: $('clear'), copy: $('copy'),
+  clear: $('clear'), copy: $('copy'), paste: $('paste'),
   status: $('status'), dot: $('dot'), meter: $('meter'), fill: $('fill'),
 };
 
@@ -211,12 +211,11 @@ document.addEventListener('keydown', (e) => {
   if (e.shiftKey && e.key.toLowerCase() === 'c') { e.preventDefault(); el.copy.click(); }
 });
 
-// 起動時にクリップボードの中身を引き取る（ホットキー起動を想定・許可時のみ）
-window.addEventListener('focus', async () => {
-  if (el.src.value || !navigator.clipboard?.readText) return;
+el.paste.addEventListener('click', async () => {
+  if (!navigator.clipboard?.readText) return;
   try {
     const text = (await navigator.clipboard.readText()).trim();
-    if (text && text.length < 5000) { el.src.value = text; debounced(); }
+    if (text) { el.src.value = text; debounced(); el.src.focus(); }
   } catch { /* 権限がなければ何もしない */ }
 });
 

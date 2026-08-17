@@ -195,19 +195,27 @@ body {
   border-top: 1px solid var(--line);
 }
 
+.pane__actions {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--step) * 2);
+}
+
 .ghost {
-  border: 0;
-  background: transparent;
+  border: 1px solid var(--line);
+  background: var(--paper);
   color: var(--dim);
   font-family: var(--mono);
   font-size: 11px;
   letter-spacing: 0.05em;
-  padding: 4px 6px;
+  padding: 5px 10px;
   border-radius: 6px;
   cursor: pointer;
+  transition: color .15s, border-color .15s, background-color .15s;
 }
 
-.ghost:hover { color: var(--accent); }
+.ghost:hover { color: var(--accent); border-color: var(--accent); }
+.ghost:active { background: var(--line); }
 .ghost:disabled { opacity: .35; cursor: default; }
 
 /* ---------- status rail ---------- */
