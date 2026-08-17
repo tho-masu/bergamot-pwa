@@ -25,7 +25,7 @@ let seq = 0;             // 直近リクエストだけを描画するための�
 /* ---------- 状態表示 ---------- */
 
 function setState(state, message, percent) {
-  const text = { wait: '準備中', dl: '取得中', ready: '待機中', err: 'エラー' }[state] ?? state;
+  const text = { wait: '準備中', dl: '翻訳中', ready: '入力待ち', err: 'エラー' }[state] ?? state;
   el.badge.textContent = text;
   el.badge.className = `badge badge--${state}`;
   el.dot.dataset.state = state;

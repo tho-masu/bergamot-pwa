@@ -12,7 +12,6 @@ import http.server
 import os
 import socketserver
 import sys
-import webbrowser
 
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8787
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -61,7 +60,6 @@ if __name__ == "__main__":
 
     url = f"http://localhost:{PORT}"
     print(f"\n  Nagi  {url}\n  停止は Control-C\n")
-    webbrowser.open(url)
 
     with Server(("127.0.0.1", PORT), Handler) as httpd:
         try:
