@@ -33,9 +33,39 @@ const el = {
 const NAMES = new Intl.DisplayNames(['ja'], { type: 'language' });
 const label = (code) => { try { return NAMES.of(code) || code; } catch { return code; } };
 
+let TranslatorClass = null;
 let translator = null;
+let loadedPairKey = null; // ワーカーに現在読み込まれている言語ペア（切り替わったら作り直す）
 let pairs = [];          // registry の {from, to} 一覧
 let seq = 0;             // 直近リクエストだけを描画するための通し番号
+let lastDetected = null; // 自動検出で最後に判定できた言語コード
+
+function setAutoLabel(text) {
+  const opt = [...el.from.options].find((o) => o.value === 'auto');
+  if (opt) opt.textContent = text;
+}
+
+// bergamot-translator の WASM ワーカーは読み込んだ翻訳モデルを解放しない。
+// ピボット翻訳などでモデルが積み上がるとメモリ不足で Aborted() になるため、
+// 言語ペアが変わるたびにワーカーごと作り直して、常に今使う分だけにする。
+function createTranslator() {
+  translator = new TranslatorClass({
+    registryUrl: REGISTRY_URL,
+    workerUrl: WORKER_URL,
+    cacheSize: 20000,
+    downloadTimeout: 0,
+  });
+  loadedPairKey = null;
+}
+
+async function ensureWorkerFor(from, to) {
+  const key = `${from}>${to}`;
+  if (loadedPairKey !== null && loadedPairKey !== key) {
+    await translator.delete();
+    createTranslator();
+  }
+  loadedPairKey = key;
+}
 
 /* ---------- 状態表示 ---------- */
 
@@ -76,8 +106,8 @@ async function boot() {
   }
 
   // 版によってクラス名が異なるため、使えるものを選ぶ
-  const Translator = mod.LatencyOptimisedTranslator || mod.BatchTranslator || mod.default;
-  if (!Translator) {
+  TranslatorClass = mod.LatencyOptimisedTranslator || mod.BatchTranslator || mod.default;
+  if (!TranslatorClass) {
     setState('err', 'translator.js に想定した翻訳クラスがありません。README の「API が変わっていたら」を参照してください。');
     return;
   }
@@ -93,12 +123,7 @@ async function boot() {
     return;
   }
 
-  translator = new Translator({
-    registryUrl: REGISTRY_URL,
-    workerUrl: WORKER_URL,
-    cacheSize: 20000,
-    downloadTimeout: 0,
-  });
+  createTranslator();
 
   fillLanguages();
   restorePair();
@@ -165,16 +190,25 @@ async function translate() {
 
   if (!translator) return;
 
-  if (!text) { showOutput(''); el.latency.textContent = ''; setState('ready', auto ? '自動検出 → ' + label(to) : `${label(from)} → ${label(to)}`); return; }
+  if (!text) {
+    showOutput('');
+    el.latency.textContent = '';
+    if (auto) setAutoLabel('自動検出');
+    setState('ready', auto ? '自動検出 → ' + label(to) : `${label(from)} → ${label(to)}`);
+    return;
+  }
 
   if (auto) {
     from = FRANC_TO_LANG[franc(text, { minLength: 3 })] ?? null;
     if (!from || !pairs.some((p) => p.from === from)) {
+      setAutoLabel('自動検出');
       showOutput('');
       el.latency.textContent = '';
       setState('err', '原文の言語を検出できませんでした。手動で選んでください。');
       return;
     }
+    lastDetected = from;
+    setAutoLabel(`${label(from)}（検知）`);
   }
   const fromLabel = auto ? `自動検出（${label(from)}）` : label(from);
 
@@ -193,6 +227,8 @@ async function translate() {
 
   const started = performance.now();
   try {
+    await ensureWorkerFor(from, to);
+    if (mine !== seq) return;                  // 待っている間に追い越された
     const response = await translator.translate({ from, to, text, html: false });
     if (mine !== seq) return;                 // 追い越されたら捨てる
     const result = response?.target?.text ?? response?.text ?? String(response);
@@ -221,13 +257,33 @@ const debounced = () => {
 };
 
 el.src.addEventListener('input', debounced);
-el.from.addEventListener('change', () => { savePair(); translate(); });
+el.from.addEventListener('change', () => {
+  if (el.from.value !== 'auto') setAutoLabel('自動検出');
+  savePair();
+  translate();
+});
 el.to.addEventListener('change', () => { savePair(); translate(); });
 
 el.swap.addEventListener('click', () => {
-  if (el.from.value === 'auto') return; // 自動検出時は入れ替え不可
-  const a = el.from.value, b = el.to.value;
+  const b = el.to.value;
   const has = (sel, v) => [...sel.options].some((o) => o.value === v);
+
+  if (el.from.value === 'auto') {
+    if (!lastDetected || !has(el.from, b) || !canTranslate(b, lastDetected)) {
+      setState('err', 'この向きのモデルがありません。');
+      return;
+    }
+    setAutoLabel('自動検出');
+    el.from.value = b;
+    el.to.value = lastDetected;
+    const translated = el.out.textContent;
+    if (translated) el.src.value = translated;
+    savePair();
+    debounced();
+    return;
+  }
+
+  const a = el.from.value;
   if (!has(el.from, b) || !has(el.to, a) || !canTranslate(b, a)) {
     setState('err', 'この向きのモデルがありません。');
     return;
@@ -237,7 +293,7 @@ el.swap.addEventListener('click', () => {
   const translated = el.out.textContent;
   if (translated) el.src.value = translated;
   savePair();
-  translate();
+  debounced();
 });
 
 el.clear.addEventListener('click', () => {
