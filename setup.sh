@@ -27,7 +27,8 @@ mkdir -p .engine vendor
   # npm init -y はディレクトリ名(.engine)からパッケージ名を決めようとして
   # ドット始まりの名前を拒否するため、package.json を直接置く
   echo '{"name":"bergamot-pwa-engine","private":true}' > package.json
-  npm install --silent @browsermt/bergamot-translator
+  # franc は原文の言語自動検出（「自動検出」選択時）に使う純JSライブラリ
+  npm install --silent @browsermt/bergamot-translator franc
 )
 
 PKG=".engine/node_modules/@browsermt/bergamot-translator"
@@ -39,6 +40,26 @@ SRC="$(find "$PKG" -path "$PKG/node_modules" -prune -o -name 'translator.js' -pr
 
 cp -R "$(dirname "$SRC")"/. vendor/
 find "$PKG" -name '*.wasm' -exec cp {} vendor/ \; 2>/dev/null || true
+
+# franc は複数の小さな ESM パッケージに分かれていて bare import
+# （'n-gram' など）を使うため、ブラウザでそのまま読めるよう
+# 1ファイルずつ相対パスに書き換えてコピーする
+FRANC=".engine/node_modules/franc"
+NGRAM=".engine/node_modules/n-gram"
+TRIGRAM=".engine/node_modules/trigram-utils"
+COLLAPSE=".engine/node_modules/collapse-white-space"
+if [ -d "$FRANC" ]; then
+  mkdir -p vendor/franc
+  cp "$FRANC/data.js" vendor/franc/data.js
+  cp "$FRANC/expressions.js" vendor/franc/expressions.js
+  cp "$NGRAM/index.js" vendor/franc/n-gram.js
+  cp "$COLLAPSE/index.js" vendor/franc/collapse-white-space.js
+  sed -e "s/from 'n-gram'/from '.\/n-gram.js'/" \
+      -e "s/from 'collapse-white-space'/from '.\/collapse-white-space.js'/" \
+      "$TRIGRAM/index.js" > vendor/franc/trigram-utils.js
+  sed "s/from 'trigram-utils'/from '.\/trigram-utils.js'/" \
+      "$FRANC/index.js" > vendor/franc/index.js
+fi
 
 echo "  vendor/ に配置:"
 find vendor -maxdepth 2 -type f | sed 's/^/    /'

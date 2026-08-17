@@ -2,10 +2,25 @@
 //
 // エンジン: vendor/translator.js       (@browsermt/bergamot-translator)
 // モデル:   models/registry.json + models/<pair>/*   (mozilla/firefox-translations-models)
+// 言語検出: vendor/franc/               (franc、原文「自動検出」選択時のみ使用)
 // どちらも setup.sh が配置します。テキストは一切ネットワークに出ません。
+
+import { franc } from './vendor/franc/index.js';
 
 const REGISTRY_URL = new URL('./models/registry.json', location.href).href;
 const WORKER_URL   = new URL('./vendor/worker/translator-worker.js', location.href).href;
+
+// franc の ISO639-3 コード → このアプリ（registry.json）が使う ISO639-1 コード。
+// franc が対応していない言語や、このレジストリに無い言語は未対応のまま。
+const FRANC_TO_LANG = {
+  arb: 'ar', azj: 'az', bel: 'be', ben: 'bn', bos: 'bs', bul: 'bg', cat: 'ca', ces: 'cs',
+  cmn: 'zh', dan: 'da', deu: 'de', ekk: 'et', ell: 'el', eng: 'en', fin: 'fi', fra: 'fr',
+  glg: 'gl', guj: 'gu', heb: 'he', hin: 'hi', hrv: 'hr', hun: 'hu', ind: 'id', ita: 'it',
+  jpn: 'ja', kan: 'kn', kor: 'ko', lit: 'lt', lvs: 'lv', mal: 'ml', mar: 'mr',
+  nld: 'nl', nno: 'nn', nob: 'nb', pes: 'fa', pol: 'pl', por: 'pt', ron: 'ro', rus: 'ru',
+  slk: 'sk', slv: 'sl', spa: 'es', srp: 'sr', swe: 'sv', tam: 'ta', tel: 'te', tha: 'th',
+  tur: 'tr', ukr: 'uk', urd: 'ur', vie: 'vi', zlm: 'ms',
+};
 
 const $ = (id) => document.getElementById(id);
 const el = {
@@ -105,6 +120,11 @@ function fillLanguages() {
   };
   fill(el.from, sources);
   fill(el.to, targets);
+
+  const auto = document.createElement('option');
+  auto.value = 'auto';
+  auto.textContent = '自動検出';
+  el.from.prepend(auto);
 }
 
 // vendor/translator.js の findModels() と同じロジック（直接ペアが無ければ
@@ -137,25 +157,39 @@ function savePair() {
 
 async function translate() {
   const text = el.src.value.trim();
-  const from = el.from.value;
+  const auto = el.from.value === 'auto';
+  let from = auto ? null : el.from.value;
   const to = el.to.value;
 
   el.count.textContent = `${el.src.value.length} 文字`;
 
   if (!translator) return;
+
+  if (!text) { showOutput(''); el.latency.textContent = ''; setState('ready', auto ? '自動検出 → ' + label(to) : `${label(from)} → ${label(to)}`); return; }
+
+  if (auto) {
+    from = FRANC_TO_LANG[franc(text, { minLength: 3 })] ?? null;
+    if (!from || !pairs.some((p) => p.from === from)) {
+      showOutput('');
+      el.latency.textContent = '';
+      setState('err', '原文の言語を検出できませんでした。手動で選んでください。');
+      return;
+    }
+  }
+  const fromLabel = auto ? `自動検出（${label(from)}）` : label(from);
+
   if (!canTranslate(from, to)) {
     showOutput('');
     el.latency.textContent = '';
-    setState('err', `${label(from)} → ${label(to)} のモデルがありません。別の組み合わせを選ぶか、setup.sh で追加してください。`);
+    setState('err', `${fromLabel} → ${label(to)} のモデルがありません。別の組み合わせを選ぶか、setup.sh で追加してください。`);
     return;
   }
 
-  if (!text) { showOutput(''); el.latency.textContent = ''; setState('ready', `${label(from)} → ${label(to)}`); return; }
   if (from === to) { showOutput(text); el.latency.textContent = ''; return; }
 
   const mine = ++seq;
   el.out.setAttribute('aria-busy', 'true');
-  setState('dl', `${label(from)} → ${label(to)} を翻訳しています。`);
+  setState('dl', `${fromLabel} → ${label(to)} を翻訳しています。`);
 
   const started = performance.now();
   try {
@@ -165,13 +199,13 @@ async function translate() {
     showOutput(result);
     const ms = Math.round(performance.now() - started);
     el.latency.textContent = `${ms} ms · 端末内`;
-    setState('ready', `${label(from)} → ${label(to)}`);
+    setState('ready', `${fromLabel} → ${label(to)}`);
   } catch (e) {
     if (mine !== seq) return;
     console.error(e);
     showOutput('');
     el.latency.textContent = '';
-    setState('err', `${label(from)} → ${label(to)} のモデルがありません。別の組み合わせを選ぶか、setup.sh で追加してください。`);
+    setState('err', `${fromLabel} → ${label(to)} のモデルがありません。別の組み合わせを選ぶか、setup.sh で追加してください。`);
   } finally {
     if (mine === seq) el.out.setAttribute('aria-busy', 'false');
   }
@@ -191,6 +225,7 @@ el.from.addEventListener('change', () => { savePair(); translate(); });
 el.to.addEventListener('change', () => { savePair(); translate(); });
 
 el.swap.addEventListener('click', () => {
+  if (el.from.value === 'auto') return; // 自動検出時は入れ替え不可
   const a = el.from.value, b = el.to.value;
   const has = (sel, v) => [...sel.options].some((o) => o.value === v);
   if (!has(el.from, b) || !has(el.to, a) || !canTranslate(b, a)) {
