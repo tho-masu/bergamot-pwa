@@ -107,6 +107,16 @@ function fillLanguages() {
   fill(el.to, targets);
 }
 
+// vendor/translator.js の findModels() と同じロジック（直接ペアが無ければ
+// 'en' を中継地点として2モデルを繋ぐ）。UI 側で先に判定するためのミラー。
+const PIVOT = 'en';
+function canTranslate(from, to) {
+  if (from === to) return true;
+  const has = (f, t) => pairs.some((p) => p.from === f && p.to === t);
+  if (has(from, to)) return true;
+  return has(from, PIVOT) && has(PIVOT, to);
+}
+
 function restorePair() {
   const saved = JSON.parse(localStorage.getItem('nagi.pair') || 'null');
   const has = (sel, v) => [...sel.options].some((o) => o.value === v);
@@ -133,7 +143,14 @@ async function translate() {
   el.count.textContent = `${el.src.value.length} 文字`;
 
   if (!translator) return;
-  if (!text) { showOutput(''); el.latency.textContent = ''; return; }
+  if (!canTranslate(from, to)) {
+    showOutput('');
+    el.latency.textContent = '';
+    setState('err', `${label(from)} → ${label(to)} のモデルがありません。別の組み合わせを選ぶか、setup.sh で追加してください。`);
+    return;
+  }
+
+  if (!text) { showOutput(''); el.latency.textContent = ''; setState('ready', `${label(from)} → ${label(to)}`); return; }
   if (from === to) { showOutput(text); el.latency.textContent = ''; return; }
 
   const mine = ++seq;
@@ -176,7 +193,7 @@ el.to.addEventListener('change', () => { savePair(); translate(); });
 el.swap.addEventListener('click', () => {
   const a = el.from.value, b = el.to.value;
   const has = (sel, v) => [...sel.options].some((o) => o.value === v);
-  if (!has(el.from, b) || !has(el.to, a)) {
+  if (!has(el.from, b) || !has(el.to, a) || !canTranslate(b, a)) {
     setState('err', 'この向きのモデルがありません。');
     return;
   }
